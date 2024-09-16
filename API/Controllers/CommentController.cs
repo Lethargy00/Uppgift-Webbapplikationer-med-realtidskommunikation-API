@@ -27,56 +27,47 @@ public class CommentController : ControllerBase
 
         if (userId == null)
         {
-            return Unauthorized("You must be logged in to create a comment.");
+            return Unauthorized();
         }
 
-        try
+        var post = await _context.Posts.FindAsync(postId);
+
+        if (post == null)
         {
-            var post = await _context.Posts.FindAsync(postId);
-            if (post == null)
-            {
-                return NotFound("The specified post does not exist.");
-            }
-
-            var newComment = new Comment
-            {
-                Text = commentDto.Text,
-                PostId = postId,
-                AppUserId = userId,
-            };
-
-            _context.Comments.Add(newComment);
-            await _context.SaveChangesAsync();
-
-            newComment = await _context
-                .Comments.Include(c => c.AppUser)
-                .FirstOrDefaultAsync(c => c.Id == newComment.Id);
-
-            if (newComment == null || newComment.AppUser == null)
-            {
-                return BadRequest("Failed to create the comment.");
-            }
-
-            var responseComment = new CommentResponseDto
-            {
-                Id = newComment.Id,
-                CommentText = newComment.Text,
-                AccountName = newComment.AppUser.AccountName,
-                CreatedDate = newComment.CreatedDate,
-                UpdatedDate = newComment.UpdatedDate,
-                Likes = new List<LikeResponseDto>(),
-            };
-
-            return CreatedAtAction("GetComment", new { id = newComment.Id }, responseComment);
+            return NotFound("Post not found");
         }
-        catch (DbUpdateException)
+
+        var newComment = new Comment
         {
-            return StatusCode(500, "An error occurred while saving the comment.");
-        }
-        catch (Exception)
+            Text = commentDto.Text,
+            PostId = postId,
+            AppUserId = userId,
+        };
+
+        _context.Comments.Add(newComment);
+        await _context.SaveChangesAsync();
+
+        // Reload the comment with the AppUser navigation property
+        newComment = await _context
+            .Comments.Include(c => c.AppUser)
+            .FirstOrDefaultAsync(c => c.Id == newComment.Id);
+
+        if (newComment == null || newComment.AppUser == null)
         {
-            return StatusCode(500, "An unexpected error occurred.");
+            return BadRequest("Failed to create comment");
         }
+
+        var responseComment = new CommentResponseDto
+        {
+            Id = newComment.Id,
+            CommentText = newComment.Text,
+            AccountName = newComment.AppUser.AccountName,
+            CreatedDate = newComment.CreatedDate,
+            UpdatedDate = newComment.UpdatedDate,
+            Likes = new List<LikeResponseDto>(),
+        };
+
+        return CreatedAtAction("GetComment", new { id = newComment.Id }, responseComment);
     }
 
     // GET: api/Comment/5
@@ -84,48 +75,39 @@ public class CommentController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> GetComment(int id)
     {
-        try
-        {
-            var comment = await _context
-                .Comments.Include(c => c.Likes)
-                .Where(c => c.Id == id)
-                .Select(c => new CommentResponseDto
-                {
-                    Id = c.Id,
-                    CommentText = c.Text,
-                    AccountName = c.AppUser.AccountName,
-                    CreatedDate = c.CreatedDate,
-                    UpdatedDate = c.UpdatedDate,
-                    Likes = c
-                        .Likes.Select(l => new LikeResponseDto
-                        {
-                            Id = l.Id,
-                            AppUserId = l.AppUserId,
-                            AccountName = l.AppUser.AccountName,
-                            CreatedDate = l.CreatedDate,
-                        })
-                        .ToList(),
-                })
-                .FirstOrDefaultAsync();
-
-            if (comment == null)
+        var comment = await _context
+            .Comments.Include(c => c.Likes)
+            .Where(c => c.Id == id)
+            .Select(c => new CommentResponseDto
             {
-                return NotFound("The specified comment does not exist.");
-            }
+                Id = c.Id,
+                CommentText = c.Text,
+                AccountName = c.AppUser.AccountName,
+                CreatedDate = c.CreatedDate,
+                UpdatedDate = c.UpdatedDate,
+                Likes = c
+                    .Likes.Select(l => new LikeResponseDto
+                    {
+                        Id = l.Id,
+                        AppUserId = l.AppUserId,
+                        AccountName = l.AppUser.AccountName,
+                        CreatedDate = l.CreatedDate,
+                    })
+                    .ToList(),
+            })
+            .FirstOrDefaultAsync();
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var Metadata = new { CurrentUserId = userId };
-            Response.Headers.Append(
-                "Metadata",
-                Newtonsoft.Json.JsonConvert.SerializeObject(Metadata)
-            );
-
-            return Ok(comment);
-        }
-        catch (Exception)
+        if (comment == null)
         {
-            return StatusCode(500, "An unexpected error occurred while retrieving the comment.");
+            return NotFound("Comment not found");
         }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var Metadata = new { CurrentUserId = userId };
+        Response.Headers.Append("Metadata", Newtonsoft.Json.JsonConvert.SerializeObject(Metadata));
+
+        return Ok(comment);
     }
 
     // PUT: api/Comment/5
@@ -134,59 +116,47 @@ public class CommentController : ControllerBase
     public async Task<IActionResult> UpdateComment(int id, [FromBody] CommentDto updatedComment)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var comment = await _context
+            .Comments.Include(c => c.AppUser)
+            .Include(c => c.Likes)
+            .ThenInclude(l => l.AppUser)
+            .FirstOrDefaultAsync(c => c.Id == id);
 
-        try
+        if (comment == null)
         {
-            var comment = await _context
-                .Comments.Include(c => c.AppUser)
-                .Include(c => c.Likes)
-                .ThenInclude(l => l.AppUser)
-                .FirstOrDefaultAsync(c => c.Id == id);
-
-            if (comment == null)
-            {
-                return NotFound("The specified comment does not exist.");
-            }
-
-            if (comment.AppUserId != userId)
-            {
-                return Unauthorized("You do not have permission to update this comment.");
-            }
-
-            comment.Text = updatedComment.Text;
-            comment.UpdatedDate = DateTime.UtcNow;
-
-            _context.Comments.Update(comment);
-            await _context.SaveChangesAsync();
-
-            var returnComment = new CommentResponseDto
-            {
-                Id = comment.Id,
-                CommentText = comment.Text,
-                AccountName = comment.AppUser?.AccountName,
-                CreatedDate = comment.CreatedDate,
-                UpdatedDate = comment.UpdatedDate,
-                Likes = comment
-                    .Likes.Select(l => new LikeResponseDto
-                    {
-                        Id = l.Id,
-                        AppUserId = l.AppUserId,
-                        AccountName = l.AppUser?.AccountName,
-                        CreatedDate = l.CreatedDate,
-                    })
-                    .ToList(),
-            };
-
-            return Ok(returnComment);
+            return NotFound("Comment not found");
         }
-        catch (DbUpdateException)
+
+        if (comment.AppUserId != userId)
         {
-            return StatusCode(500, "An error occurred while updating the comment.");
+            return Unauthorized();
         }
-        catch (Exception)
+
+        comment.Text = updatedComment.Text;
+        comment.UpdatedDate = DateTime.UtcNow;
+
+        _context.Comments.Update(comment);
+        await _context.SaveChangesAsync();
+
+        var returnComment = new CommentResponseDto
         {
-            return StatusCode(500, "An unexpected error occurred.");
-        }
+            Id = comment.Id,
+            CommentText = comment.Text,
+            AccountName = comment.AppUser?.AccountName, // Use null-conditional operator
+            CreatedDate = comment.CreatedDate,
+            UpdatedDate = comment.UpdatedDate,
+            Likes = comment
+                .Likes.Select(l => new LikeResponseDto
+                {
+                    Id = l.Id,
+                    AppUserId = l.AppUserId,
+                    AccountName = l.AppUser?.AccountName, // Use null-conditional operator
+                    CreatedDate = l.CreatedDate,
+                })
+                .ToList(),
+        };
+
+        return Ok(returnComment);
     }
 
     // DELETE: api/Comment/5
@@ -195,33 +165,23 @@ public class CommentController : ControllerBase
     public async Task<IActionResult> DeleteComment(int id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var comment = await _context.Comments.FindAsync(id);
 
-        try
+        if (comment == null)
         {
-            var comment = await _context.Comments.FindAsync(id);
-            if (comment == null)
-            {
-                return NotFound("The specified comment does not exist.");
-            }
-
-            var isAdmin = User.IsInRole("Admin");
-            if (comment.AppUserId != userId && !isAdmin)
-            {
-                return Unauthorized("You do not have permission to delete this comment.");
-            }
-
-            _context.Comments.Remove(comment);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            return NotFound("Comment not found");
         }
-        catch (DbUpdateException)
+
+        var isAdmin = User.IsInRole("Admin");
+
+        if (comment.AppUserId != userId && !isAdmin)
         {
-            return StatusCode(500, "An error occurred while deleting the comment.");
+            return Unauthorized();
         }
-        catch (Exception)
-        {
-            return StatusCode(500, "An unexpected error occurred.");
-        }
+
+        _context.Comments.Remove(comment);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
 }

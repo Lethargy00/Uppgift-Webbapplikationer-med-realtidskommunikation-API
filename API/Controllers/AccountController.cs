@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
 using API.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,17 +11,14 @@ namespace API.Controllers
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
 
         public AccountController(
             UserManager<AppUser> userManager,
-            SignInManager<AppUser> signInManager,
-            RoleManager<IdentityRole> roleManager
+            SignInManager<AppUser> signInManager
         )
         {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _roleManager = roleManager;
+                _userManager = userManager;
+                        _signInManager = signInManager;
         }
 
         [HttpPost("register")]
@@ -33,117 +29,29 @@ namespace API.Controllers
                 return BadRequest(ModelState);
             }
 
-            try
+            var user = new AppUser
             {
-                var user = new AppUser
-                {
-                    UserName = model.Email,
-                    Email = model.Email,
-                    AccountName = model.AccountName,
-                };
+                UserName = model.Email,
+                Email = model.Email,
+                AccountName =
+                    model.AccountName // Set the AccountName property
+                ,
+            };
 
-                var result = await _userManager.CreateAsync(user, model.Password);
+            var result = await _userManager.CreateAsync(user, model.Password);
 
-                if (result.Succeeded)
-                {
-                    await _signInManager.SignInAsync(user, isPersistent: false);
-                    return Ok(new { Message = "Registration successfully." });
-                }
-                else
-                {
-                    if (result.Errors.Any(e => e.Code == "DuplicateUserName"))
-                    {
-                        return Conflict(new { Error = "Email already in use." });
-                    }
-                    return BadRequest(ModelState);
-                }
-            }
-            catch (Exception)
+            if (result.Succeeded)
             {
-                return StatusCode(500, new { Error = "An error occurred during registration." });
+                await _signInManager.SignInAsync(user, isPersistent: false);
+                return Ok(new { Result = "User registered successfully" });
             }
-        }
 
-        [Authorize(Roles = "Admin")]
-        [HttpPost("add-admin-role/{email}")]
-        public async Task<IActionResult> AddAdminRole(string email)
-        {
-            try
+            foreach (var error in result.Errors)
             {
-                var user = await _userManager.FindByEmailAsync(email);
-
-                if (user == null)
-                {
-                    return NotFound("User not found.");
-                }
-
-                var roleExists = await _roleManager.RoleExistsAsync("Admin");
-                if (!roleExists)
-                {
-                    return StatusCode(500, new { Error = "Role not found." });
-                }
-
-                var userInRole = await _userManager.IsInRoleAsync(user, "Admin");
-                if (userInRole)
-                {
-                    return Conflict(new { Error = "User already has Admin role." });
-                }
-
-                var result = await _userManager.AddToRoleAsync(user, "Admin");
-                if (result.Succeeded)
-                {
-                    return Ok(new { Message = "Admin role added successfully." });
-                }
-                else
-                {
-                    return StatusCode(500, new { Error = "Failed to add Admin role." });
-                }
+                ModelState.AddModelError(string.Empty, error.Description);
             }
-            catch (Exception)
-            {
-                return StatusCode(500, new { Error = "An unexpected error occurred." });
-            }
-        }
 
-        [Authorize(Roles = "Admin")]
-        [HttpDelete("remove-admin-role/{email}")]
-        public async Task<IActionResult> RemoveAdminRole(string email)
-        {
-            try
-            {
-                var user = await _userManager.FindByEmailAsync(email);
-
-                if (user == null)
-                {
-                    return NotFound(new { Error = "User not found." });
-                }
-
-                var roleExists = await _roleManager.RoleExistsAsync("Admin");
-                if (!roleExists)
-                {
-                    return StatusCode(500, new { Error = "Role not found." });
-                }
-
-                var userInRole = await _userManager.IsInRoleAsync(user, "Admin");
-                if (!userInRole)
-                {
-                    return BadRequest(new { Error = "User does not have Admin role." });
-                }
-
-                var result = await _userManager.RemoveFromRoleAsync(user, "Admin");
-                if (result.Succeeded)
-                {
-                    return Ok(new { Message = "Admin role removed successfully." });
-                }
-                else
-                {
-                    return StatusCode(500, new { Error = "Failed to remove Admin role." });
-                }
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, new { Error = "An unexpected error occurred." });
-            }
+            return BadRequest(ModelState);
         }
     }
 }
