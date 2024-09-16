@@ -21,30 +21,47 @@ public class LikeController : ControllerBase
     [Authorize]
     public async Task<IActionResult> LikePost(int postId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        var post = await _context
-            .Posts.Include(p => p.Likes)
-            .FirstOrDefaultAsync(p => p.Id == postId);
-        if (post == null)
-        {
-            return NotFound("Post not found");
-        }
-
-        if (post.Likes.Any(l => l.AppUserId == userId))
-        {
-            return BadRequest("You have already liked this post");
-        }
-        if (postId == 0)
+        if (postId <= 0)
         {
             return BadRequest("Post id is required");
         }
 
-        var like = new Like { PostId = postId, AppUserId = userId };
-        _context.Likes.Add(like);
-        await _context.SaveChangesAsync();
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        return Ok();
+        if (userId == null)
+        {
+            return Unauthorized("You must be logged in to like a post.");
+        }
+
+        try
+        {
+            var post = await _context
+                .Posts.Include(p => p.Likes)
+                .FirstOrDefaultAsync(p => p.Id == postId);
+            if (post == null)
+            {
+                return NotFound("Post not found");
+            }
+
+            if (post.Likes.Any(l => l.AppUserId == userId))
+            {
+                return Conflict(new { message = "You have already liked this post." });
+            }
+
+            var like = new Like { PostId = postId, AppUserId = userId };
+            _context.Likes.Add(like);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Post liked successfully." });
+        }
+        catch (DbUpdateException)
+        {
+            return StatusCode(500, "An error occurred while saving the like.");
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "An unexpected error occurred.");
+        }
     }
 
     // POST: api/Like/Comment/5
@@ -52,31 +69,47 @@ public class LikeController : ControllerBase
     [Authorize]
     public async Task<IActionResult> LikeComment(int commentId)
     {
+        if (commentId <= 0)
+        {
+            return BadRequest("Comment id must be greater than zero.");
+        }
+
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        var comment = await _context
-            .Comments.Include(c => c.Likes)
-            .FirstOrDefaultAsync(c => c.Id == commentId);
-        if (comment == null)
+        if (userId == null)
         {
-            return NotFound("Comment not found");
+            return Unauthorized("You must be logged in to like a comment.");
         }
 
-        if (comment.Likes.Any(l => l.AppUserId == userId))
+        try
         {
-            return BadRequest("You have already liked this comment");
-        }
+            var comment = await _context
+                .Comments.Include(c => c.Likes)
+                .FirstOrDefaultAsync(c => c.Id == commentId);
+            if (comment == null)
+            {
+                return NotFound("Comment not found");
+            }
 
-        if (commentId == 0)
+            if (comment.Likes.Any(l => l.AppUserId == userId))
+            {
+                return Conflict(new { message = "You have already liked this comment." });
+            }
+
+            var like = new Like { CommentId = commentId, AppUserId = userId };
+            comment.Likes.Add(like);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Comment liked successfully." });
+        }
+        catch (DbUpdateException)
         {
-            return BadRequest("Comment id is required");
+            return StatusCode(500, "An error occurred while saving the like.");
         }
-
-        var like = new Like { CommentId = commentId, AppUserId = userId };
-        comment.Likes.Add(like);
-        await _context.SaveChangesAsync();
-
-        return Ok();
+        catch (Exception)
+        {
+            return StatusCode(500, "An unexpected error occurred.");
+        }
     }
 
     // DELETE: api/Like/5
@@ -84,65 +117,97 @@ public class LikeController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Unlike(int postId)
     {
+        if (postId <= 0)
+        {
+            return BadRequest("Post id must be greater than zero.");
+        }
+
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        var post = await _context
-            .Posts.Include(p => p.Likes)
-            .FirstOrDefaultAsync(p => p.Id == postId);
-
-        if (post == null)
+        if (userId == null)
         {
-            return NotFound("Post not found");
+            return Unauthorized("You must be logged in to unlike a post.");
         }
 
-        var like = await _context.Likes.FirstOrDefaultAsync(l => l.PostId == postId);
-
-        if (like == null)
+        try
         {
-            return NotFound("Post is not liked");
-        }
+            var post = await _context
+                .Posts.Include(p => p.Likes)
+                .FirstOrDefaultAsync(p => p.Id == postId);
 
-        if (like.AppUserId != userId)
+            if (post == null)
+            {
+                return NotFound("Post not found");
+            }
+
+            var like = await _context.Likes.FirstOrDefaultAsync(l =>
+                l.PostId == postId && l.AppUserId == userId
+            );
+
+            if (like == null)
+            {
+                return Conflict("You have not liked this post.");
+            }
+
+            _context.Likes.Remove(like);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+        catch (DbUpdateException)
         {
-            return Unauthorized();
+            return StatusCode(500, "An error occurred while updating the like.");
         }
-
-        _context.Likes.Remove(like);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        catch (Exception)
+        {
+            return StatusCode(500, "An unexpected error occurred.");
+        }
     }
 
     [HttpDelete("Comment/{commentId}")]
     [Authorize]
     public async Task<IActionResult> UnlikeComment(int commentId)
     {
+        if (commentId <= 0)
+        {
+            return BadRequest("Comment id must be greater than zero.");
+        }
+
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        var comment = await _context
-            .Comments.Include(c => c.Likes)
-            .FirstOrDefaultAsync(c => c.Id == commentId);
-
-        if (comment == null)
+        if (userId == null)
         {
-            return NotFound("Comment not found");
+            return Unauthorized("You must be logged in to unlike a comment.");
         }
 
-        var like = await _context.Likes.FirstOrDefaultAsync(l => l.CommentId == commentId);
-
-        if (like == null)
+        try
         {
-            return NotFound("Comment is not liked");
-        }
+            var like = await _context
+                .Likes.Include(l => l.Comment)
+                .FirstOrDefaultAsync(l => l.CommentId == commentId && l.AppUserId == userId);
 
-        if (like.AppUserId != userId)
+            if (like == null)
+            {
+                var commentExists = await _context.Comments.AnyAsync(c => c.Id == commentId);
+                if (!commentExists)
+                {
+                    return NotFound("Comment not found.");
+                }
+                return Conflict("You have not liked this comment.");
+            }
+
+            _context.Likes.Remove(like);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+        catch (DbUpdateException)
         {
-            return Unauthorized();
+            return StatusCode(500, "An error occurred while updating the like.");
         }
-
-        _context.Likes.Remove(like);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        catch (Exception)
+        {
+            return StatusCode(500, "An unexpected error occurred.");
+        }
     }
 }

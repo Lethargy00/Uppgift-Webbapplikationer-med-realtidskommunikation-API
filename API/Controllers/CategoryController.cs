@@ -38,11 +38,11 @@ namespace API.Controllers
 
                 return Ok(categories.Select(c => new { c.Id, c.Name }));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(
                     500,
-                    new { message = "An unexpected error occurred.", details = ex.Message }
+                    new { Error = "An error occurred while processing your request." }
                 );
             }
         }
@@ -57,16 +57,16 @@ namespace API.Controllers
 
                 if (category == null)
                 {
-                    return NotFound(new { message = $"Category with ID {id} not found." });
+                    return NotFound(new { message = "Category not found." });
                 }
 
                 return Ok(new { category.Id, category.Name });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(
                     500,
-                    new { message = "An unexpected error occurred.", details = ex.Message }
+                    new { message = "An error occurred while processing your request." }
                 );
             }
         }
@@ -74,18 +74,25 @@ namespace API.Controllers
         [HttpPost]
         public async Task<ActionResult<Category>> AddCategory(CategoryDto categoryDto)
         {
+            if (!User.IsInRole("Admin"))
+            {
+                return Unauthorized(
+                    new { message = "You are not authorized to perform this action." }
+                );
+            }
+
             if (string.IsNullOrEmpty(categoryDto.Name))
             {
                 return BadRequest(new { message = "Category data is required." });
             }
 
-            var isAdmin = User.IsInRole("Admin");
+            var existingCategory = await _context.Categories.FirstOrDefaultAsync(c =>
+                c.Name.ToLower() == categoryDto.Name.ToLower()
+            );
 
-            if (!isAdmin)
+            if (existingCategory != null)
             {
-                return Unauthorized(
-                    new { message = "You are not authorized to perform this action." }
-                );
+                return Conflict(new { message = "A category with the same name already exists." });
             }
 
             var category = new Category { Name = categoryDto.Name };
@@ -94,26 +101,17 @@ namespace API.Controllers
             {
                 _context.Categories.Add(category);
                 await _context.SaveChangesAsync();
-                return Ok(new { category.Id, category.Name });
-            }
-            catch (DbUpdateException dbEx)
-            {
-                // Handle database update exceptions
-                return StatusCode(
-                    500,
-                    new
-                    {
-                        message = "An error occurred while updating the database.",
-                        details = dbEx.Message,
-                    }
+                return CreatedAtAction(
+                    nameof(GetCategory),
+                    new { id = category.Id },
+                    new { category.Id, category.Name }
                 );
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // Handle all other exceptions
                 return StatusCode(
                     500,
-                    new { message = "An unexpected error occurred.", details = ex.Message }
+                    new { message = "An error occurred while processing your request." }
                 );
             }
         }
@@ -121,25 +119,32 @@ namespace API.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<Category>> UpdateCategory(int id, CategoryDto categoryDto)
         {
-            if (string.IsNullOrEmpty(categoryDto.Name))
-            {
-                return BadRequest(new { message = "Category data is required." });
-            }
-
-            var isAdmin = User.IsInRole("Admin");
-
-            if (!isAdmin)
+            if (!User.IsInRole("Admin"))
             {
                 return Unauthorized(
                     new { message = "You are not authorized to perform this action." }
                 );
             }
 
+            if (string.IsNullOrEmpty(categoryDto.Name))
+            {
+                return BadRequest(new { message = "Category name is required." });
+            }
+
             var category = await _context.Categories.FindAsync(id);
 
             if (category == null)
             {
-                return NotFound(new { message = $"Category with ID {id} not found." });
+                return NotFound(new { message = "Category not found." });
+            }
+
+            var existingCategory = await _context.Categories.FirstOrDefaultAsync(c =>
+                c.Name.ToLower() == categoryDto.Name.ToLower()
+            );
+
+            if (existingCategory != null)
+            {
+                return Conflict(new { message = "A category with the same name already exists." });
             }
 
             category.Name = categoryDto.Name;
@@ -150,24 +155,11 @@ namespace API.Controllers
                 await _context.SaveChangesAsync();
                 return Ok(new { category.Id, category.Name });
             }
-            catch (DbUpdateException dbEx)
+            catch (Exception)
             {
-                // Handle database update exceptions
                 return StatusCode(
                     500,
-                    new
-                    {
-                        message = "An error occurred while updating the database.",
-                        details = dbEx.Message,
-                    }
-                );
-            }
-            catch (Exception ex)
-            {
-                // Handle all other exceptions
-                return StatusCode(
-                    500,
-                    new { message = "An unexpected error occurred.", details = ex.Message }
+                    new { message = "An error occurred while processing your request." }
                 );
             }
         }
@@ -175,9 +167,7 @@ namespace API.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult<Category>> DeleteCategory(int id)
         {
-            var isAdmin = User.IsInRole("Admin");
-
-            if (!isAdmin)
+            if (!User.IsInRole("Admin"))
             {
                 return Unauthorized(
                     new { message = "You are not authorized to perform this action." }
@@ -188,7 +178,7 @@ namespace API.Controllers
 
             if (category == null)
             {
-                return NotFound(new { message = $"Category with ID {id} not found." });
+                return NotFound(new { message = "Category not found." });
             }
 
             try
@@ -197,24 +187,11 @@ namespace API.Controllers
                 await _context.SaveChangesAsync();
                 return Ok(new { message = "Category deleted successfully." });
             }
-            catch (DbUpdateException dbEx)
+            catch (Exception)
             {
-                // Handle database update exceptions
                 return StatusCode(
                     500,
-                    new
-                    {
-                        message = "An error occurred while updating the database.",
-                        details = dbEx.Message,
-                    }
-                );
-            }
-            catch (Exception ex)
-            {
-                // Handle all other exceptions
-                return StatusCode(
-                    500,
-                    new { message = "An unexpected error occurred.", details = ex.Message }
+                    new { message = "An error occurred while processing your request." }
                 );
             }
         }
