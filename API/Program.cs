@@ -7,11 +7,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
-using API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
 builder
     .Services.AddControllers()
     .AddJsonOptions(options =>
@@ -19,10 +19,6 @@ builder
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.WriteIndented = true;
     });
-
-
-// Add service BlobService to the container
-builder.Services.AddSingleton<BlobService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -42,13 +38,13 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddDbContext<ApplicationDBContext>(options =>
 {
-     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
- });
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
 
-// builder.Services.AddDbContext<ApplicationDBContext>(option =>
-// {
-//     option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
-// });
+/* builder.Services.AddDbContext<ApplicationDBContext>(option => */
+/* { */
+/*     option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")); */
+/* }); */
 
 builder.Services.AddAuthorization();
 builder
