@@ -1,10 +1,10 @@
+using System;
+using System.IO;
+using System.Threading.Tasks;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
-using System;
-using System.IO;
-using System.Threading.Tasks;
 
 namespace API.Services
 {
@@ -15,20 +15,27 @@ namespace API.Services
 
         public BlobService(IConfiguration configuration)
         {
-            var connectionString = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;";
-            
+            var connectionString = configuration.GetSection("AzureBlobStorage")["ConnectionString"];
+            var containerName = configuration.GetSection("AzureBlobStorage")["ContainerName"];
+
             if (string.IsNullOrEmpty(connectionString))
             {
-                throw new ArgumentNullException(nameof(connectionString), "Azure Blob Storage connection string is not configured.");
+                throw new ArgumentNullException(
+                    nameof(connectionString),
+                    "Azure Blob Storage connection string is not configured."
+                );
+            }
+
+            if (string.IsNullOrEmpty(containerName))
+            {
+                throw new ArgumentNullException(
+                    nameof(containerName),
+                    "Azure Blob Storage container name is not configured."
+                );
             }
 
             _blobServiceClient = new BlobServiceClient(connectionString);
-            _containerName = "nartuligablobcontainer";
-
-            if (string.IsNullOrEmpty(_containerName))
-            {
-                throw new ArgumentNullException(nameof(_containerName), "Blob container name is not configured.");
-            }
+            _containerName = containerName;
 
             // Ensure the container exists or create it if not
             EnsureContainerExistsAsync().GetAwaiter().GetResult();

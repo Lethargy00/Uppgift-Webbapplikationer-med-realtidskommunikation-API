@@ -10,10 +10,13 @@
     {
         public static async Task CreateAdminAccount(
             UserManager<AppUser> userManager,
-            RoleManager<IdentityRole> roleManager
+            RoleManager<IdentityRole> roleManager,
+            IConfiguration configuration
         )
         {
-            string adminEmail = "admin@example.com";
+            string adminEmail = configuration["Admin:Email"];
+            string accountName = configuration["Admin:AccountName"];
+            string password = configuration["Admin:Password"];
 
             try
             {
@@ -25,11 +28,11 @@
                     // Create a new user
                     var user = new AppUser
                     {
-                        AccountName = "ÅsaKringla",
+                        AccountName = accountName,
                         UserName = adminEmail,
                         Email = adminEmail,
                     };
-                    var result = await userManager.CreateAsync(user, "AdminPassword123!");
+                    var result = await userManager.CreateAsync(user, password);
 
                     if (result.Succeeded)
                     {
@@ -46,26 +49,22 @@
                     else
                     {
                         // Capture specific errors if account creation fails
-                        throw new Exception(
-                            "Failed to create admin user: " + string.Join(", ", result.Errors)
-                        );
+                        string errorMessage =
+                            "Failed to create admin user: " + string.Join(", ", result.Errors);
+                        throw new Exception(errorMessage);
                     }
                 }
             }
-            catch (DbUpdateException ex)
+            catch (DbUpdateException)
             {
                 // Log database update exceptions
-                Console.WriteLine(
-                    "A database error occurred while creating the admin account: " + ex.Message
-                );
+                Console.WriteLine("A database error occurred while creating the admin account");
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Log general exceptions
-                Console.WriteLine(
-                    "An error occurred while creating the admin account: " + ex.Message
-                );
+                Console.WriteLine("An error occurred while creating the admin account");
                 throw;
             }
         }
