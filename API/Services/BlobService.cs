@@ -26,16 +26,16 @@ namespace API.Services
                 );
             }
 
-            _blobServiceClient = new BlobServiceClient(connectionString);
-            _containerName = containerName;
-
-            if (string.IsNullOrEmpty(_containerName))
+            if (string.IsNullOrEmpty(containerName))
             {
                 throw new ArgumentNullException(
-                    nameof(_containerName),
-                    "Blob container name is not configured."
+                    nameof(containerName),
+                    "Azure Blob Storage container name is not configured."
                 );
             }
+
+            _blobServiceClient = new BlobServiceClient(connectionString);
+            _containerName = containerName;
 
             // Ensure the container exists or create it if not
             EnsureContainerExistsAsync().GetAwaiter().GetResult();
