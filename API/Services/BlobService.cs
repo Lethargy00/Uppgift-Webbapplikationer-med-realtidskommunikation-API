@@ -57,10 +57,14 @@ namespace API.Services
 
         public async Task<string> UploadImageAsync(IFormFile file)
         {
+           
             var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
-            var blobClient = containerClient.GetBlobClient(file.FileName);
 
-            using (var stream = file.OpenReadStream())
+            // Generate a new GUID and append the file extension to it
+            var blobName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+            var blobClient = containerClient.GetBlobClient(blobName);
+
+            await using (var stream = file.OpenReadStream())
             {
                 await blobClient.UploadAsync(stream, true);
             }
@@ -75,5 +79,21 @@ namespace API.Services
             var downloadInfo = await blobClient.DownloadAsync();
             return downloadInfo.Value.Content;
         }
+        
+        public async Task DeleteBlobAsync(string blobUrl)
+        {
+            var blobName = GetBlobNameFromUrl(blobUrl);
+            var blobContainerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
+            var blobClient = blobContainerClient.GetBlobClient(blobName);
+            await blobClient.DeleteIfExistsAsync();
+        }
+
+        private string GetBlobNameFromUrl(string blobUrl)
+        {
+            var uri = new Uri(blobUrl);
+            var blobName = uri.Segments.Last();
+            return blobName;
+        }
+        
     }
 }
