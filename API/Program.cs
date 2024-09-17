@@ -1,13 +1,13 @@
 using System.Text.Json.Serialization;
 using API.Data;
 using API.Models;
+using API.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
-using API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +19,6 @@ builder
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.WriteIndented = true;
     });
-
 
 // Add service BlobService to the container
 builder.Services.AddSingleton<BlobService>();
@@ -42,8 +41,8 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddDbContext<ApplicationDBContext>(options =>
 {
-     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
- });
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
 
 // builder.Services.AddDbContext<ApplicationDBContext>(option =>
 // {
@@ -80,7 +79,8 @@ using (var scope = app.Services.CreateScope())
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    await AdminAccountInitializer.CreateAdminAccount(userManager, roleManager);
+    var configuration = builder.Configuration;
+    await AdminAccountInitializer.CreateAdminAccount(userManager, roleManager, configuration);
 }
 
 app.Run();
