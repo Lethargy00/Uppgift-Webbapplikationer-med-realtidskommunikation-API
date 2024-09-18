@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class CommentController : ControllerBase
 {
     private readonly ApplicationDBContext _context;
@@ -20,7 +21,6 @@ public class CommentController : ControllerBase
 
     // POST: api/Comment
     [HttpPost]
-    [Authorize]
     public async Task<IActionResult> CreateComment(int postId, [FromBody] CommentDto commentDto)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -130,7 +130,6 @@ public class CommentController : ControllerBase
 
     // PUT: api/Comment/5
     [HttpPut("{id}")]
-    [Authorize]
     public async Task<IActionResult> UpdateComment(int id, [FromBody] CommentDto updatedComment)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -191,7 +190,6 @@ public class CommentController : ControllerBase
 
     // DELETE: api/Comment/5
     [HttpDelete("{id}")]
-    [Authorize]
     public async Task<IActionResult> DeleteComment(int id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

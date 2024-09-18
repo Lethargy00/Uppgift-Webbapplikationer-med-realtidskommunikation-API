@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class PostController : ControllerBase
 {
     private readonly BlobService _blobService;
@@ -296,7 +297,6 @@ public class PostController : ControllerBase
 
     // POST: api/Post
     [HttpPost]
-    [Authorize]
     public async Task<IActionResult> CreatePost([FromForm] PostDto postDto)
     {
         if (postDto == null)
@@ -369,7 +369,6 @@ public class PostController : ControllerBase
 
     // PUT: api/Post/5
     [HttpPut("{id}")]
-    [Authorize]
     public async Task<IActionResult> UpdatePost(int id, [FromForm] PostDto updatedPost)
     {
         if (updatedPost == null)
@@ -496,7 +495,6 @@ public class PostController : ControllerBase
     }
 
     [HttpPatch("{id}")]
-    [Authorize]
     public async Task<IActionResult> PatchPost(int id, [FromForm] PostUpdateDto updatedPost)
     {
         if (updatedPost == null)
@@ -655,7 +653,6 @@ public class PostController : ControllerBase
 
     // DELETE: api/Post/5
     [HttpDelete("{id}")]
-    [Authorize]
     public async Task<IActionResult> DeletePost(int id)
     {
         if (id <= 0)
