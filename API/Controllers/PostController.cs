@@ -406,7 +406,6 @@ public class PostController : ControllerBase
                 return Unauthorized("User is not authorized to update this post.");
             }
 
-            //TODO Ensure this works
             updatedPost.CategoryId = updatedPost.CategoryId ?? null;
 
             if (updatedPost.CategoryId.HasValue)
@@ -612,48 +611,44 @@ public class PostController : ControllerBase
                 CategoryName = post.Category?.Name,
                 CreatedDate = post.CreatedDate,
                 UpdatedDate = post.UpdatedDate,
-                Likes =
-                    post.Likes?.Select(l => new LikeResponseDto
-                        {
-                            Id = l.Id,
-                            AppUserId = l.AppUserId,
-                            AccountName = l.AppUser.AccountName,
-                            CreatedDate = l.CreatedDate,
-                        })
-                        .ToList() ?? new List<LikeResponseDto>(),
-                Comments =
-                    post.Comments?.Select(c => new CommentResponseDto
-                        {
-                            Id = c.Id,
-                            CommentText = c.Text,
-                            AccountName = c.AppUser.AccountName,
-                            CreatedDate = c.CreatedDate,
-                            UpdatedDate = c.UpdatedDate,
-                            Likes =
-                                c.Likes?.Select(l => new LikeResponseDto
-                                    {
-                                        Id = l.Id,
-                                        AppUserId = l.AppUserId,
-                                        AccountName = l.AppUser.AccountName,
-                                        CreatedDate = l.CreatedDate,
-                                    })
-                                    .ToList() ?? new List<LikeResponseDto>(),
-                        })
-                        .ToList() ?? new List<CommentResponseDto>(),
+                Likes = post
+                    .Likes.Select(l => new LikeResponseDto
+                    {
+                        Id = l.Id,
+                        AppUserId = l.AppUserId,
+                        AccountName = l.AppUser.AccountName,
+                        CreatedDate = l.CreatedDate,
+                    })
+                    .ToList(),
+                Comments = post
+                    .Comments.Select(c => new CommentResponseDto
+                    {
+                        Id = c.Id,
+                        CommentText = c.Text,
+                        AccountName = c.AppUser.AccountName,
+                        CreatedDate = c.CreatedDate,
+                        UpdatedDate = c.UpdatedDate,
+                        Likes = c
+                            .Likes.Select(l => new LikeResponseDto
+                            {
+                                Id = l.Id,
+                                AppUserId = l.AppUserId,
+                                AccountName = l.AppUser.AccountName,
+                                CreatedDate = l.CreatedDate,
+                            })
+                            .ToList(),
+                    })
+                    .ToList(),
             };
 
             return Ok(returnPost);
         }
-        catch (DbUpdateException ex)
+        catch (DbUpdateException)
         {
-            // Log the exception details
-            Console.WriteLine($"DbUpdateException: {ex.Message}");
             return StatusCode(500, "An error occurred while updating the post.");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            // Log the exception details
-            Console.WriteLine($"Exception: {ex.Message}");
             return StatusCode(500, "An unexpected error occurred while updating the post.");
         }
     }

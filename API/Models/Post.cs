@@ -17,7 +17,7 @@ namespace API.Models
         [Required, MaxLength(280)]
         public string Caption { get; set; }
 
-        public string? ImageUrl { get; set; } // Nullable if no image
+        public string ImageUrl { get; set; } // Nullable if no image
 
         [Required]
         [ForeignKey("AppUser")]

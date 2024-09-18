@@ -163,7 +163,7 @@ public class CommentController : ControllerBase
             {
                 Id = comment.Id,
                 CommentText = comment.Text,
-                AccountName = comment.AppUser?.AccountName,
+                AccountName = comment.AppUser.AccountName,
                 CreatedDate = comment.CreatedDate,
                 UpdatedDate = comment.UpdatedDate,
                 Likes = comment
@@ -171,7 +171,7 @@ public class CommentController : ControllerBase
                     {
                         Id = l.Id,
                         AppUserId = l.AppUserId,
-                        AccountName = l.AppUser?.AccountName,
+                        AccountName = l.AppUser.AccountName,
                         CreatedDate = l.CreatedDate,
                     })
                     .ToList(),
