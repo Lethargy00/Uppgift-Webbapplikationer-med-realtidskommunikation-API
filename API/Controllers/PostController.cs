@@ -4,10 +4,10 @@ using API.Dtos.Comment;
 using API.Dtos.Like;
 using API.Dtos.Post;
 using API.Models;
+using API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using API.Services;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -51,6 +51,7 @@ public class PostController : ControllerBase
                     Caption = p.Caption,
                     ImageUrl = p.ImageUrl,
                     AccountName = p.AppUser.AccountName,
+                    AppUserId = p.AppUser.Id,
                     Likes = p
                         .Likes.Select(l => new LikeResponseDto
                         {
@@ -135,6 +136,7 @@ public class PostController : ControllerBase
                     Caption = p.Caption,
                     ImageUrl = p.ImageUrl,
                     AccountName = p.AppUser.AccountName,
+                    AppUserId = p.AppUser.Id,
                     Comments = p
                         .Comments.Select(c => new CommentResponseDto
                         {
@@ -229,6 +231,7 @@ public class PostController : ControllerBase
                     Caption = p.Caption,
                     ImageUrl = p.ImageUrl,
                     AccountName = p.AppUser.AccountName,
+                    AppUserId = p.AppUser.Id,
                     Likes = p
                         .Likes.Select(l => new LikeResponseDto
                         {
@@ -346,6 +349,7 @@ public class PostController : ControllerBase
                 Caption = post.Caption,
                 ImageUrl = post.ImageUrl,
                 AccountName = post.AppUser.AccountName,
+                AppUserId = post.AppUser.Id,
                 CategoryName = category?.Name,
                 CreatedDate = post.CreatedDate,
                 UpdatedDate = post.UpdatedDate,
@@ -420,7 +424,7 @@ public class PostController : ControllerBase
                 var oldImageUrl = post.ImageUrl;
 
                 imageUrl = await _blobService.UploadImageAsync(updatedPost.Image);
-                
+
                 if (imageUrl == string.Empty)
                 {
                     return StatusCode(500, "An error occurred while updating the post image.");
@@ -431,7 +435,6 @@ public class PostController : ControllerBase
                     await _blobService.DeleteBlobAsync(oldImageUrl);
                 }
             }
-            
 
             post.Caption = updatedPost.Caption;
             post.ImageUrl = imageUrl;
@@ -447,6 +450,7 @@ public class PostController : ControllerBase
                 Caption = post.Caption,
                 ImageUrl = post.ImageUrl,
                 AccountName = post.AppUser.AccountName,
+                AppUserId = post.AppUser.Id,
                 CategoryName = post.Category?.Name,
                 CreatedDate = post.CreatedDate,
                 UpdatedDate = post.UpdatedDate,
@@ -551,7 +555,9 @@ public class PostController : ControllerBase
             else
             {
                 // Ensure the post is reloaded with the category included
-                var existingPost = await _context.Posts.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == id);
+                var existingPost = await _context
+                    .Posts.Include(p => p.Category)
+                    .FirstOrDefaultAsync(p => p.Id == id);
                 if (existingPost == null)
                 {
                     return NotFound("Post not found.");
@@ -579,13 +585,13 @@ public class PostController : ControllerBase
                 var oldImageUrl = post.ImageUrl;
                 string imageUrl = await _blobService.UploadImageAsync(updatedPost.Image);
                 post.ImageUrl = imageUrl;
-                
-                if(post.ImageUrl == null)
+
+                if (post.ImageUrl == null)
                 {
                     return StatusCode(500, "An error occurred while updating the post image.");
                 }
-                
-                if (oldImageUrl != null )
+
+                if (oldImageUrl != null)
                 {
                     await _blobService.DeleteBlobAsync(oldImageUrl);
                 }
@@ -602,34 +608,38 @@ public class PostController : ControllerBase
                 Caption = post.Caption,
                 ImageUrl = post.ImageUrl,
                 AccountName = post.AppUser.AccountName,
+                AppUserId = post.AppUser.Id,
                 CategoryName = post.Category?.Name,
                 CreatedDate = post.CreatedDate,
                 UpdatedDate = post.UpdatedDate,
-                Likes = post
-                    .Likes?.Select(l => new LikeResponseDto
-                    {
-                        Id = l.Id,
-                        AppUserId = l.AppUserId,
-                        AccountName = l.AppUser.AccountName,
-                        CreatedDate = l.CreatedDate,
-                    }).ToList() ?? new List<LikeResponseDto>(),
-                Comments = post
-                    .Comments?.Select(c => new CommentResponseDto
-                    {
-                        Id = c.Id,
-                        CommentText = c.Text,
-                        AccountName = c.AppUser.AccountName,
-                        CreatedDate = c.CreatedDate,
-                        UpdatedDate = c.UpdatedDate,
-                        Likes = c
-                            .Likes?.Select(l => new LikeResponseDto
-                            {
-                                Id = l.Id,
-                                AppUserId = l.AppUserId,
-                                AccountName = l.AppUser.AccountName,
-                                CreatedDate = l.CreatedDate,
-                            }).ToList() ?? new List<LikeResponseDto>(),
-                    }).ToList() ?? new List<CommentResponseDto>(),
+                Likes =
+                    post.Likes?.Select(l => new LikeResponseDto
+                        {
+                            Id = l.Id,
+                            AppUserId = l.AppUserId,
+                            AccountName = l.AppUser.AccountName,
+                            CreatedDate = l.CreatedDate,
+                        })
+                        .ToList() ?? new List<LikeResponseDto>(),
+                Comments =
+                    post.Comments?.Select(c => new CommentResponseDto
+                        {
+                            Id = c.Id,
+                            CommentText = c.Text,
+                            AccountName = c.AppUser.AccountName,
+                            CreatedDate = c.CreatedDate,
+                            UpdatedDate = c.UpdatedDate,
+                            Likes =
+                                c.Likes?.Select(l => new LikeResponseDto
+                                    {
+                                        Id = l.Id,
+                                        AppUserId = l.AppUserId,
+                                        AccountName = l.AppUser.AccountName,
+                                        CreatedDate = l.CreatedDate,
+                                    })
+                                    .ToList() ?? new List<LikeResponseDto>(),
+                        })
+                        .ToList() ?? new List<CommentResponseDto>(),
             };
 
             return Ok(returnPost);
