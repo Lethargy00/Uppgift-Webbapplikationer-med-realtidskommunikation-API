@@ -19,11 +19,11 @@ namespace API.Models
 
         // Nullable foreign keys because a like can belong to either a post or a comment
         [ForeignKey("Post")]
-        public int? PostId { get; set; }
-        public Post? Post { get; set; }
+        public int PostId { get; set; }
+        public Post Post { get; set; }
 
         [ForeignKey("Comment")]
-        public int? CommentId { get; set; }
+        public int CommentId { get; set; }
         public Comment? Comment { get; set; }
 
         // Audit Fields

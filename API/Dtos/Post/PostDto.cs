@@ -9,8 +9,13 @@ namespace API.Dtos.Post
 {
     public class PostDto
     {
+        [Required, MaxLength(280)]
         public string Caption { get; set; }
-        public IFormFile? Image { get; set; }
-        public int? CategoryId { get; set; }
+
+        [Required]
+        public IFormFile Image { get; set; }
+
+        [Required]
+        public int CategoryId { get; set; }
     }
 }

@@ -13,9 +13,9 @@ namespace API.Dtos.Post
         public string Caption { get; set; }
         public string ImageUrl { get; set; }
         public string AccountName { get; set; }
+        public string CategoryName { get; set; }
         public List<LikeResponseDto> Likes { get; set; } = new List<LikeResponseDto>();
         public List<CommentResponseDto> Comments { get; set; } = new List<CommentResponseDto>();
-        public string CategoryName { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
     }

@@ -4,10 +4,10 @@ using API.Dtos.Comment;
 using API.Dtos.Like;
 using API.Dtos.Post;
 using API.Models;
+using API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using API.Services;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -296,9 +296,9 @@ public class PostController : ControllerBase
     [Authorize]
     public async Task<IActionResult> CreatePost([FromForm] PostDto postDto)
     {
-        if (postDto == null)
+        if (!ModelState.IsValid)
         {
-            return BadRequest("Post data is null.");
+            return BadRequest(ModelState);
         }
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -308,59 +308,41 @@ public class PostController : ControllerBase
             return Unauthorized("User not authenticated.");
         }
 
-        try
+        var category = await _context.Categories.FindAsync(postDto.CategoryId);
+
+        var ImageUrl = await _blobService.UploadImageAsync(postDto.Image);
+
+        var appUser = await _context.AppUsers.FindAsync(userId);
+
+        if (appUser == null)
         {
-            var category = await _context.Categories.FindAsync(postDto.CategoryId);
-
-            if (category == null && postDto.CategoryId.HasValue)
-            {
-                return BadRequest("Invalid category");
-            }
-
-            var ImageUrl = await _blobService.UploadImageAsync(postDto.Image);
-
-            var post = new Post
-            {
-                Caption = postDto.Caption,
-                ImageUrl = ImageUrl,
-                CategoryId = postDto?.CategoryId,
-                AppUserId = userId,
-            };
-
-            _context.Posts.Add(post);
-            await _context.SaveChangesAsync();
-
-            // Fetch the AppUser to ensure it's not null
-            post = await _context
-                .Posts.Include(p => p.AppUser)
-                .FirstOrDefaultAsync(p => p.Id == post.Id);
-
-            if (post?.AppUser == null)
-            {
-                return BadRequest("Invalid user.");
-            }
-
-            var newPost = new PostResponseDto
-            {
-                Id = post.Id,
-                Caption = post.Caption,
-                ImageUrl = post.ImageUrl,
-                AccountName = post.AppUser.AccountName,
-                CategoryName = category?.Name,
-                CreatedDate = post.CreatedDate,
-                UpdatedDate = post.UpdatedDate,
-            };
-
-            return CreatedAtAction(nameof(GetById), new { id = post.Id }, newPost);
+            return StatusCode(500, "An unexpected error occurred while fetching user information");
         }
-        catch (DbUpdateException)
+
+        var post = new Post
         {
-            return StatusCode(500, "An error occurred while saving the post.");
-        }
-        catch (Exception)
+            Caption = postDto.Caption,
+            ImageUrl = ImageUrl,
+            CategoryId = postDto.CategoryId,
+            AppUserId = userId,
+            AppUser = appUser,
+        };
+
+        _context.Posts.Add(post);
+        await _context.SaveChangesAsync();
+
+        var newPost = new PostResponseDto
         {
-            return StatusCode(500, "An unexpected error occurred while creating the post.");
-        }
+            Id = post.Id,
+            Caption = post.Caption,
+            ImageUrl = post.ImageUrl,
+            AccountName = post.AppUser.AccountName,
+            CategoryName = post.Category.Name,
+            CreatedDate = post.CreatedDate,
+            UpdatedDate = post.UpdatedDate,
+        };
+
+        return CreatedAtAction(nameof(GetById), new { id = post.Id }, newPost);
     }
 
     // PUT: api/Post/5
@@ -368,12 +350,13 @@ public class PostController : ControllerBase
     [Authorize]
     public async Task<IActionResult> UpdatePost(int id, [FromForm] PostDto updatedPost)
     {
-        if (updatedPost == null)
+        if (!ModelState.IsValid)
         {
-            return BadRequest("Updated post data is null.");
+            return BadRequest(ModelState);
         }
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
         if (userId == null)
         {
             return Unauthorized("User not authenticated.");
@@ -383,13 +366,7 @@ public class PostController : ControllerBase
         {
             var post = await _context
                 .Posts.Include(p => p.AppUser)
-                .Include(p => p.Likes)
-                .ThenInclude(l => l.AppUser)
-                .Include(p => p.Comments)
-                .ThenInclude(c => c.AppUser)
-                .Include(p => p.Comments)
-                .ThenInclude(c => c.Likes)
-                .ThenInclude(l => l.AppUser)
+                .Include(p => p.Category)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             if (post == null)
@@ -402,25 +379,21 @@ public class PostController : ControllerBase
                 return Unauthorized("User is not authorized to update this post.");
             }
 
-            //TODO Ensure this works
-            updatedPost.CategoryId = updatedPost.CategoryId ?? null;
+            var category = await _context.Categories.FindAsync(updatedPost.CategoryId);
 
-            if (updatedPost.CategoryId.HasValue)
+            if (category == null || updatedPost.CategoryId < 0)
             {
-                var category = await _context.Categories.FindAsync(updatedPost.CategoryId.Value);
-                if (category == null)
-                {
-                    return BadRequest("Invalid category");
-                }
+                return BadRequest("Invalid category");
             }
 
             string imageUrl = post.ImageUrl; // Keep the old image URL by default
+
             if (updatedPost.Image != null && updatedPost.Image.Length > 0)
             {
                 var oldImageUrl = post.ImageUrl;
 
                 imageUrl = await _blobService.UploadImageAsync(updatedPost.Image);
-                
+
                 if (imageUrl == string.Empty)
                 {
                     return StatusCode(500, "An error occurred while updating the post image.");
@@ -431,7 +404,6 @@ public class PostController : ControllerBase
                     await _blobService.DeleteBlobAsync(oldImageUrl);
                 }
             }
-            
 
             post.Caption = updatedPost.Caption;
             post.ImageUrl = imageUrl;
@@ -447,7 +419,7 @@ public class PostController : ControllerBase
                 Caption = post.Caption,
                 ImageUrl = post.ImageUrl,
                 AccountName = post.AppUser.AccountName,
-                CategoryName = post.Category?.Name,
+                CategoryName = category.Id == 0 ? "None" : category.Name,
                 CreatedDate = post.CreatedDate,
                 UpdatedDate = post.UpdatedDate,
                 Likes = post
@@ -511,14 +483,7 @@ public class PostController : ControllerBase
         {
             var post = await _context
                 .Posts.Include(p => p.AppUser)
-                .Include(p => p.Likes)
-                .ThenInclude(l => l.AppUser)
-                .Include(p => p.Comments)
-                .ThenInclude(c => c.AppUser)
-                .Include(p => p.Comments)
-                .ThenInclude(c => c.Likes)
-                .ThenInclude(l => l.AppUser)
-                .Include(p => p.Category) // Ensure Category is included
+                .Include(p => p.Category)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             if (post == null)
@@ -537,55 +502,19 @@ public class PostController : ControllerBase
                 post.Caption = updatedPost.Caption;
             }
 
-            // Update the category if provided
-            if (updatedPost.CategoryId.HasValue)
-            {
-                var category = await _context.Categories.FindAsync(updatedPost.CategoryId.Value);
-                if (category == null)
-                {
-                    return BadRequest("Invalid category");
-                }
-
-                post.CategoryId = updatedPost.CategoryId.Value;
-            }
-            else
-            {
-                // Ensure the post is reloaded with the category included
-                var existingPost = await _context.Posts.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == id);
-                if (existingPost == null)
-                {
-                    return NotFound("Post not found.");
-                }
-
-                post.CategoryId = existingPost.CategoryId;
-
-                // Get the name of the category
-                post.Category = existingPost.Category;
-
-                // Log the category details
-                if (post.Category == null)
-                {
-                    Console.WriteLine("Category is null");
-                }
-                else
-                {
-                    Console.WriteLine($"Category Name: {post.Category.Name}");
-                }
-            }
-
             // Update the image if provided
             if (updatedPost.Image != null && updatedPost.Image.Length > 0)
             {
                 var oldImageUrl = post.ImageUrl;
                 string imageUrl = await _blobService.UploadImageAsync(updatedPost.Image);
                 post.ImageUrl = imageUrl;
-                
-                if(post.ImageUrl == null)
+
+                if (post.ImageUrl == null)
                 {
                     return StatusCode(500, "An error occurred while updating the post image.");
                 }
-                
-                if (oldImageUrl != null )
+
+                if (oldImageUrl != null)
                 {
                     await _blobService.DeleteBlobAsync(oldImageUrl);
                 }
@@ -602,48 +531,47 @@ public class PostController : ControllerBase
                 Caption = post.Caption,
                 ImageUrl = post.ImageUrl,
                 AccountName = post.AppUser.AccountName,
-                CategoryName = post.Category?.Name,
+                CategoryName = post.Category.Id == 0 ? "None" : post.Category.Name,
                 CreatedDate = post.CreatedDate,
                 UpdatedDate = post.UpdatedDate,
-                Likes = post
-                    .Likes?.Select(l => new LikeResponseDto
-                    {
-                        Id = l.Id,
-                        AppUserId = l.AppUserId,
-                        AccountName = l.AppUser.AccountName,
-                        CreatedDate = l.CreatedDate,
-                    }).ToList() ?? new List<LikeResponseDto>(),
-                Comments = post
-                    .Comments?.Select(c => new CommentResponseDto
-                    {
-                        Id = c.Id,
-                        CommentText = c.Text,
-                        AccountName = c.AppUser.AccountName,
-                        CreatedDate = c.CreatedDate,
-                        UpdatedDate = c.UpdatedDate,
-                        Likes = c
-                            .Likes?.Select(l => new LikeResponseDto
-                            {
-                                Id = l.Id,
-                                AppUserId = l.AppUserId,
-                                AccountName = l.AppUser.AccountName,
-                                CreatedDate = l.CreatedDate,
-                            }).ToList() ?? new List<LikeResponseDto>(),
-                    }).ToList() ?? new List<CommentResponseDto>(),
+                Likes =
+                    post.Likes?.Select(l => new LikeResponseDto
+                        {
+                            Id = l.Id,
+                            AppUserId = l.AppUserId,
+                            AccountName = l.AppUser.AccountName,
+                            CreatedDate = l.CreatedDate,
+                        })
+                        .ToList() ?? new List<LikeResponseDto>(),
+                Comments =
+                    post.Comments?.Select(c => new CommentResponseDto
+                        {
+                            Id = c.Id,
+                            CommentText = c.Text,
+                            AccountName = c.AppUser.AccountName,
+                            CreatedDate = c.CreatedDate,
+                            UpdatedDate = c.UpdatedDate,
+                            Likes =
+                                c.Likes?.Select(l => new LikeResponseDto
+                                    {
+                                        Id = l.Id,
+                                        AppUserId = l.AppUserId,
+                                        AccountName = l.AppUser.AccountName,
+                                        CreatedDate = l.CreatedDate,
+                                    })
+                                    .ToList() ?? new List<LikeResponseDto>(),
+                        })
+                        .ToList() ?? new List<CommentResponseDto>(),
             };
 
             return Ok(returnPost);
         }
-        catch (DbUpdateException ex)
+        catch (DbUpdateException)
         {
-            // Log the exception details
-            Console.WriteLine($"DbUpdateException: {ex.Message}");
             return StatusCode(500, "An error occurred while updating the post.");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            // Log the exception details
-            Console.WriteLine($"Exception: {ex.Message}");
             return StatusCode(500, "An unexpected error occurred while updating the post.");
         }
     }

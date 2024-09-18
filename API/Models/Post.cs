@@ -17,7 +17,8 @@ namespace API.Models
         [Required, MaxLength(280)]
         public string Caption { get; set; }
 
-        public string? ImageUrl { get; set; } // Nullable if no image
+        [Required]
+        public string ImageUrl { get; set; }
 
         [Required]
         [ForeignKey("AppUser")]
@@ -28,7 +29,7 @@ namespace API.Models
         public List<Comment> Comments { get; set; } = new List<Comment>();
         public List<Like> Likes { get; set; } = new List<Like>();
 
-        public int? CategoryId { get; set; }
+        public int CategoryId { get; set; }
         public Category? Category { get; set; }
 
         // Audit Fields
