@@ -23,7 +23,7 @@ public class PostController : ControllerBase
         _context = context;
     }
 
-    // GET: api/Post// GET: api/Post
+    // GET: api/Post
     [HttpGet]
     [AllowAnonymous]
     public async Task<IActionResult> GetAll(int pageNumber = 1, int pageSize = 10)
@@ -299,9 +299,9 @@ public class PostController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreatePost([FromForm] PostDto postDto)
     {
-        if (postDto == null)
+        if (!ModelState.IsValid)
         {
-            return BadRequest("Post data is null.");
+            return BadRequest(ModelState);
         }
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -320,20 +320,28 @@ public class PostController : ControllerBase
                 return BadRequest("Invalid category");
             }
 
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+            var fileExtension = Path.GetExtension(postDto.Image.FileName).ToLower();
+            if (!allowedExtensions.Contains(fileExtension))
+            {
+                return BadRequest(
+                    "Invalid file type. Only JPG, JPEG, PNG, WEBP and GIF files are allowed."
+                );
+            }
+
             var ImageUrl = await _blobService.UploadImageAsync(postDto.Image);
 
             var post = new Post
             {
                 Caption = postDto.Caption,
                 ImageUrl = ImageUrl,
-                CategoryId = postDto?.CategoryId,
+                CategoryId = postDto.CategoryId,
                 AppUserId = userId,
             };
 
             _context.Posts.Add(post);
             await _context.SaveChangesAsync();
 
-            // Fetch the AppUser to ensure it's not null
             post = await _context
                 .Posts.Include(p => p.AppUser)
                 .FirstOrDefaultAsync(p => p.Id == post.Id);
