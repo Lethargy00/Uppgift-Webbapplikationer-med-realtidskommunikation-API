@@ -14,9 +14,24 @@
             IConfiguration configuration
         )
         {
-            string adminEmail = configuration["Admin:Email"];
-            string accountName = configuration["Admin:AccountName"];
-            string password = configuration["Admin:Password"];
+            string? adminEmail = configuration["Admin:Email"];
+            string? accountName = configuration["Admin:AccountName"];
+            string? password = configuration["Admin:Password"];
+
+            if (string.IsNullOrEmpty(adminEmail))
+            {
+                throw new InvalidOperationException("Admin email is not configured.");
+            }
+
+            if (string.IsNullOrEmpty(accountName))
+            {
+                throw new InvalidOperationException("Admin account name is not configured.");
+            }
+
+            if (string.IsNullOrEmpty(password))
+            {
+                throw new InvalidOperationException("Admin password is not configured.");
+            }
 
             try
             {
