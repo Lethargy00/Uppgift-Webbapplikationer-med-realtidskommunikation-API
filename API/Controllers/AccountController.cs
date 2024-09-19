@@ -27,6 +27,7 @@ namespace API.Controllers
         }
 
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterViewModel model)
         {
             if (!ModelState.IsValid)
@@ -65,10 +66,15 @@ namespace API.Controllers
             }
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpPost("add-admin-role/{email}")]
         public async Task<IActionResult> AddAdminRole(string email)
         {
+            if (!User.IsInRole("Admin"))
+            {
+                return Unauthorized(
+                    new { message = "You are not authorized to perform this action." }
+                );
+            }
             try
             {
                 var user = await _userManager.FindByEmailAsync(email);
@@ -106,10 +112,15 @@ namespace API.Controllers
             }
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpDelete("remove-admin-role/{email}")]
         public async Task<IActionResult> RemoveAdminRole(string email)
         {
+            if (!User.IsInRole("Admin"))
+            {
+                return Unauthorized(
+                    new { message = "You are not authorized to perform this action." }
+                );
+            }
             try
             {
                 var user = await _userManager.FindByEmailAsync(email);

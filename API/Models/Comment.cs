@@ -25,10 +25,8 @@ namespace API.Models
         public string AppUserId { get; set; }
         public AppUser AppUser { get; set; }
 
-        // Relationships
         public List<Like> Likes { get; set; } = new List<Like>();
 
-        // Audit Fields
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedDate { get; set; } = DateTime.UtcNow;
     }

@@ -21,7 +21,7 @@ namespace API.Models
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; }
 
-        [Required]
+        [Required, MaxLength(25, ErrorMessage = "Account name can't exceed 25 characters")]
         public string AccountName { get; set; }
     }
 }
