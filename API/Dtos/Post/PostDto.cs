@@ -9,7 +9,7 @@ namespace API.Dtos.Post
 {
     public class PostDto
     {
-        [Required, MaxLength(280)]
+        [Required, MaxLength(280, ErrorMessage = "Posts can't exceed 280 characters")]
         public string Caption { get; set; }
 
         [Required]

@@ -8,7 +8,7 @@ namespace API.Dtos.Comment
 {
     public class CommentDto
     {
-        [Required, MaxLength(200)]
+        [Required, MaxLength(200, ErrorMessage = "Comments can't exceed 200 characters")]
         public string Text { get; set; }
     }
 }

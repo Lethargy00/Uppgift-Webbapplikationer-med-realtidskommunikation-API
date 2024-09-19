@@ -8,7 +8,7 @@ namespace API.Dtos.Category
 {
     public class CategoryDto
     {
-        [Required, MaxLength(25, ErrorMessage = "Category name can't exceed 25 characters")]
+        [Required, MaxLength(12, ErrorMessage = "Category name can't exceed 12 characters")]
         public string Name { get; set; }
     }
 }
