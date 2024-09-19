@@ -10,15 +10,13 @@ namespace API.Models
 {
     public class AppUser : IdentityUser
     {
-        [Required, MaxLength(100)]
+        [Required, MaxLength(25, ErrorMessage = "Account name can't exceed 25 characters")]
         public string AccountName { get; set; }
 
-        // Relationships
         public List<Post> Posts { get; set; } = new List<Post>();
         public List<Comment> Comments { get; set; } = new List<Comment>();
         public List<Like> Likes { get; set; } = new List<Like>();
 
-        // Audit Fields
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedDate { get; set; } = DateTime.UtcNow;
     }

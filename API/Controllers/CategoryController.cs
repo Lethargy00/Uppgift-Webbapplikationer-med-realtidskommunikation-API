@@ -81,24 +81,26 @@ namespace API.Controllers
                 );
             }
 
-            if (string.IsNullOrEmpty(categoryDto.Name))
+            if (!ModelState.IsValid)
             {
-                return BadRequest(new { message = "Category data is required." });
+                return BadRequest(ModelState);
             }
-
-            var existingCategory = await _context.Categories.FirstOrDefaultAsync(c =>
-                c.Name.ToLower() == categoryDto.Name.ToLower()
-            );
-
-            if (existingCategory != null)
-            {
-                return Conflict(new { message = "A category with the same name already exists." });
-            }
-
-            var category = new Category { Name = categoryDto.Name };
 
             try
             {
+                var existingCategory = await _context.Categories.FirstOrDefaultAsync(c =>
+                    c.Name.ToLower() == categoryDto.Name.ToLower()
+                );
+
+                if (existingCategory != null)
+                {
+                    return Conflict(
+                        new { message = "A category with the same name already exists." }
+                    );
+                }
+
+                var category = new Category { Name = categoryDto.Name };
+
                 _context.Categories.Add(category);
                 await _context.SaveChangesAsync();
                 return CreatedAtAction(
@@ -107,12 +109,13 @@ namespace API.Controllers
                     new { category.Id, category.Name }
                 );
             }
+            catch (DbUpdateException)
+            {
+                return StatusCode(500, "An error occurred while saving the category.");
+            }
             catch (Exception)
             {
-                return StatusCode(
-                    500,
-                    new { message = "An error occurred while processing your request." }
-                );
+                return StatusCode(500, "An unexpected error occurred while creating the category.");
             }
         }
 
@@ -126,41 +129,44 @@ namespace API.Controllers
                 );
             }
 
-            if (string.IsNullOrEmpty(categoryDto.Name))
+            if (!ModelState.IsValid)
             {
-                return BadRequest(new { message = "Category name is required." });
+                return BadRequest(ModelState);
             }
-
-            var category = await _context.Categories.FindAsync(id);
-
-            if (category == null)
-            {
-                return NotFound(new { message = "Category not found." });
-            }
-
-            var existingCategory = await _context.Categories.FirstOrDefaultAsync(c =>
-                c.Name.ToLower() == categoryDto.Name.ToLower()
-            );
-
-            if (existingCategory != null)
-            {
-                return Conflict(new { message = "A category with the same name already exists." });
-            }
-
-            category.Name = categoryDto.Name;
 
             try
             {
+                var category = await _context.Categories.FindAsync(id);
+
+                if (category == null)
+                {
+                    return NotFound(new { message = "Category not found." });
+                }
+
+                var existingCategory = await _context.Categories.FirstOrDefaultAsync(c =>
+                    c.Name.ToLower() == categoryDto.Name.ToLower()
+                );
+
+                if (existingCategory != null)
+                {
+                    return Conflict(
+                        new { message = "A category with the same name already exists." }
+                    );
+                }
+
+                category.Name = categoryDto.Name;
+
                 _context.Categories.Update(category);
                 await _context.SaveChangesAsync();
                 return Ok(new { category.Id, category.Name });
             }
+            catch (DbUpdateException)
+            {
+                return StatusCode(500, "An error occurred while saving the category.");
+            }
             catch (Exception)
             {
-                return StatusCode(
-                    500,
-                    new { message = "An error occurred while processing your request." }
-                );
+                return StatusCode(500, "An unexpected error occurred while updating the category.");
             }
         }
 
@@ -174,25 +180,26 @@ namespace API.Controllers
                 );
             }
 
-            var category = await _context.Categories.FindAsync(id);
-
-            if (category == null)
-            {
-                return NotFound(new { message = "Category not found." });
-            }
-
             try
             {
+                var category = await _context.Categories.FindAsync(id);
+
+                if (category == null)
+                {
+                    return NotFound(new { message = "Category not found." });
+                }
+
                 _context.Categories.Remove(category);
                 await _context.SaveChangesAsync();
                 return Ok(new { message = "Category deleted successfully." });
             }
+            catch (DbUpdateException)
+            {
+                return StatusCode(500, "An error occurred while deleting the category.");
+            }
             catch (Exception)
             {
-                return StatusCode(
-                    500,
-                    new { message = "An error occurred while processing your request." }
-                );
+                return StatusCode(500, "An unexpected error occurred while deleting the category.");
             }
         }
     }

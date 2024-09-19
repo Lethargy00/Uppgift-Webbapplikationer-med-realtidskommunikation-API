@@ -8,6 +8,7 @@ namespace API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class AccountController : ControllerBase
     {
         private readonly UserManager<AppUser> _userManager;
@@ -26,6 +27,7 @@ namespace API.Controllers
         }
 
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterViewModel model)
         {
             if (!ModelState.IsValid)
@@ -64,10 +66,15 @@ namespace API.Controllers
             }
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpPost("add-admin-role/{email}")]
         public async Task<IActionResult> AddAdminRole(string email)
         {
+            if (!User.IsInRole("Admin"))
+            {
+                return Unauthorized(
+                    new { message = "You are not authorized to perform this action." }
+                );
+            }
             try
             {
                 var user = await _userManager.FindByEmailAsync(email);
@@ -105,10 +112,15 @@ namespace API.Controllers
             }
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpDelete("remove-admin-role/{email}")]
         public async Task<IActionResult> RemoveAdminRole(string email)
         {
+            if (!User.IsInRole("Admin"))
+            {
+                return Unauthorized(
+                    new { message = "You are not authorized to perform this action." }
+                );
+            }
             try
             {
                 var user = await _userManager.FindByEmailAsync(email);
@@ -145,24 +157,33 @@ namespace API.Controllers
                 return StatusCode(500, new { Error = "An unexpected error occurred." });
             }
         }
-        [Authorize]
+
         [HttpGet("WhoAmI")]
         public async Task<IActionResult> WhoAmI()
         {
             try
             {
-                var isAdmin = User.IsInRole("Admin");
                 var user = await _userManager.GetUserAsync(User);
-                return Ok(new { user.Id, user.AccountName, isAdmin });
+                if (user == null)
+                {
+                    return NotFound("User not found");
+                }
+
+                var isAdmin = User.IsInRole("Admin");
+
+                return Ok(
+                    new
+                    {
+                        user.Id,
+                        user.AccountName,
+                        isAdmin,
+                    }
+                );
             }
             catch (Exception)
             {
                 return StatusCode(500, "An unexpected error occurred.");
             }
         }
-        
-        
-        
-        
     }
 }

@@ -17,7 +17,6 @@ namespace API.Models
         public string AppUserId { get; set; }
         public AppUser AppUser { get; set; }
 
-        // Nullable foreign keys because a like can belong to either a post or a comment
         [ForeignKey("Post")]
         public int? PostId { get; set; }
         public Post? Post { get; set; }
@@ -26,7 +25,6 @@ namespace API.Models
         public int? CommentId { get; set; }
         public Comment? Comment { get; set; }
 
-        // Audit Fields
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
     }
 }

@@ -10,6 +10,8 @@ namespace API.Models
     {
         [Key]
         public int Id { get; set; }
+
+        [Required, MaxLength(12)]
         public string Name { get; set; }
         public List<Post> Posts { get; set; } = new List<Post>();
     }

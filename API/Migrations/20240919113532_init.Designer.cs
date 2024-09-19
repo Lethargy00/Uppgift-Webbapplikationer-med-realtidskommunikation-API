@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace API.Migrations
 {
     [DbContext(typeof(ApplicationDBContext))]
-    [Migration("20240912120630_init")]
+    [Migration("20240919113532_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -35,8 +35,8 @@ namespace API.Migrations
 
                     b.Property<string>("AccountName")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasMaxLength(25)
+                        .HasColumnType("character varying(25)");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
@@ -110,7 +110,8 @@ namespace API.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)");
 
                     b.HasKey("Id");
 
@@ -131,6 +132,11 @@ namespace API.Migrations
                         {
                             Id = 3,
                             Name = "Blommor"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Name = "Gräs"
                         });
                 });
 
@@ -225,6 +231,7 @@ namespace API.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ImageUrl")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("UpdatedDate")

@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class CommentController : ControllerBase
 {
     private readonly ApplicationDBContext _context;
@@ -20,7 +21,6 @@ public class CommentController : ControllerBase
 
     // POST: api/Comment
     [HttpPost]
-    [Authorize]
     public async Task<IActionResult> CreateComment(int postId, [FromBody] CommentDto commentDto)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -28,6 +28,11 @@ public class CommentController : ControllerBase
         if (userId == null)
         {
             return Unauthorized("You must be logged in to create a comment.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
         }
 
         try
@@ -130,10 +135,19 @@ public class CommentController : ControllerBase
 
     // PUT: api/Comment/5
     [HttpPut("{id}")]
-    [Authorize]
     public async Task<IActionResult> UpdateComment(int id, [FromBody] CommentDto updatedComment)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId == null)
+        {
+            return Unauthorized("You must be logged in to update a comment.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
 
         try
         {
@@ -163,7 +177,7 @@ public class CommentController : ControllerBase
             {
                 Id = comment.Id,
                 CommentText = comment.Text,
-                AccountName = comment.AppUser?.AccountName,
+                AccountName = comment.AppUser.AccountName,
                 CreatedDate = comment.CreatedDate,
                 UpdatedDate = comment.UpdatedDate,
                 Likes = comment
@@ -171,7 +185,7 @@ public class CommentController : ControllerBase
                     {
                         Id = l.Id,
                         AppUserId = l.AppUserId,
-                        AccountName = l.AppUser?.AccountName,
+                        AccountName = l.AppUser.AccountName,
                         CreatedDate = l.CreatedDate,
                     })
                     .ToList(),
@@ -191,10 +205,14 @@ public class CommentController : ControllerBase
 
     // DELETE: api/Comment/5
     [HttpDelete("{id}")]
-    [Authorize]
     public async Task<IActionResult> DeleteComment(int id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId == null)
+        {
+            return Unauthorized("You must be logged in to delete a comment.");
+        }
 
         try
         {

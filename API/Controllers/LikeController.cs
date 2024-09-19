@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class LikeController : ControllerBase
 {
     private readonly ApplicationDBContext _context;
@@ -18,7 +19,6 @@ public class LikeController : ControllerBase
 
     // POST: api/Like/Post/5
     [HttpPost("Post/{postId}")]
-    [Authorize]
     public async Task<IActionResult> LikePost(int postId)
     {
         if (postId <= 0)
@@ -66,7 +66,6 @@ public class LikeController : ControllerBase
 
     // POST: api/Like/Comment/5
     [HttpPost("Comment/{commentId}")]
-    [Authorize]
     public async Task<IActionResult> LikeComment(int commentId)
     {
         if (commentId <= 0)
@@ -114,7 +113,6 @@ public class LikeController : ControllerBase
 
     // DELETE: api/Like/5
     [HttpDelete("{postId}")]
-    [Authorize]
     public async Task<IActionResult> Unlike(int postId)
     {
         if (postId <= 0)
@@ -165,7 +163,6 @@ public class LikeController : ControllerBase
     }
 
     [HttpDelete("Comment/{commentId}")]
-    [Authorize]
     public async Task<IActionResult> UnlikeComment(int commentId)
     {
         if (commentId <= 0)
