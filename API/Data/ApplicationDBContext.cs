@@ -23,9 +23,8 @@ namespace API.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder); // Ensure the base IdentityDbContext configurations are applied.
+            base.OnModelCreating(modelBuilder);
 
-            // Post -> Comment relationship with cascade delete
             modelBuilder
                 .Entity<Post>()
                 .HasMany(p => p.Comments)
@@ -33,7 +32,6 @@ namespace API.Data
                 .HasForeignKey(c => c.PostId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Post -> Category relationship with restricted delete
             modelBuilder
                 .Entity<Post>()
                 .HasOne(p => p.Category)
@@ -41,23 +39,20 @@ namespace API.Data
                 .HasForeignKey(p => p.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Post -> Like relationship without cascade delete (to avoid multiple cascade paths)
             modelBuilder
                 .Entity<Post>()
                 .HasMany(p => p.Likes)
                 .WithOne(l => l.Post)
                 .HasForeignKey(l => l.PostId)
-                .OnDelete(DeleteBehavior.Restrict); // Change this to restrict
+                .OnDelete(DeleteBehavior.Restrict);
 
-            // Comment -> Like relationship with cascade delete
             modelBuilder
                 .Entity<Comment>()
                 .HasMany(c => c.Likes)
                 .WithOne(l => l.Comment)
                 .HasForeignKey(l => l.CommentId)
-                .OnDelete(DeleteBehavior.Cascade); // Keep cascade delete here
+                .OnDelete(DeleteBehavior.Cascade);
 
-            // AppUser -> Post relationship with restricted delete
             modelBuilder
                 .Entity<AppUser>()
                 .HasMany(u => u.Posts)
@@ -65,7 +60,6 @@ namespace API.Data
                 .HasForeignKey(p => p.AppUserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // AppUser -> Comment relationship with restricted delete
             modelBuilder
                 .Entity<AppUser>()
                 .HasMany(u => u.Comments)
@@ -73,7 +67,6 @@ namespace API.Data
                 .HasForeignKey(c => c.AppUserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // AppUser -> Like relationship with restricted delete
             modelBuilder
                 .Entity<AppUser>()
                 .HasMany(u => u.Likes)
@@ -81,17 +74,6 @@ namespace API.Data
                 .HasForeignKey(l => l.AppUserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Explanation of the relationships:
-            // A Post can have multiple Comments and Likes.
-            // A Comment can have multiple Likes.
-            // An AppUser can create multiple Posts, Comments, and Likes.
-
-            // The OnDelete behavior:
-            // When a Post is deleted, all associated Comments and Likes are also deleted (cascade delete).
-            // When a Comment is deleted, all associated Likes are also deleted (cascade delete).
-            // When an AppUser is deleted, their associated Posts, Comments, and Likes are not deleted (restrict delete).
-
-            // Seed predefined categories
             modelBuilder
                 .Entity<Category>()
                 .HasData(
@@ -101,7 +83,6 @@ namespace API.Data
                     new Category { Id = 4, Name = "Gräs" }
                 );
 
-            // Configure primary key for IdentityUserLogin<string>
             modelBuilder
                 .Entity<IdentityUserLogin<string>>()
                 .HasKey(i => new { i.LoginProvider, i.ProviderKey });
