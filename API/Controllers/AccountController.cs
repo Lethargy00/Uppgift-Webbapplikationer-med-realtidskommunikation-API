@@ -163,8 +163,14 @@ namespace API.Controllers
         {
             try
             {
-                var isAdmin = User.IsInRole("Admin");
                 var user = await _userManager.GetUserAsync(User);
+                if (user == null)
+                {
+                    return NotFound("User not found");
+                }
+
+                var isAdmin = User.IsInRole("Admin");
+
                 return Ok(
                     new
                     {
