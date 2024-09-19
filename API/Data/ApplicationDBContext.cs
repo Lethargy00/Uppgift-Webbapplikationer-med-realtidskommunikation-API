@@ -97,7 +97,8 @@ namespace API.Data
                 .HasData(
                     new Category { Id = 1, Name = "Träd" },
                     new Category { Id = 2, Name = "Buskar" },
-                    new Category { Id = 3, Name = "Blommor" }
+                    new Category { Id = 3, Name = "Blommor" },
+                    new Category { Id = 4, Name = "Gräs" }
                 );
 
             // Configure primary key for IdentityUserLogin<string>

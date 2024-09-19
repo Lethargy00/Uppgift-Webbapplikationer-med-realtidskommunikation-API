@@ -30,6 +30,11 @@ public class CommentController : ControllerBase
             return Unauthorized("You must be logged in to create a comment.");
         }
 
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
         try
         {
             var post = await _context.Posts.FindAsync(postId);
@@ -134,6 +139,16 @@ public class CommentController : ControllerBase
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+        if (userId == null)
+        {
+            return Unauthorized("You must be logged in to update a comment.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
         try
         {
             var comment = await _context
@@ -193,6 +208,11 @@ public class CommentController : ControllerBase
     public async Task<IActionResult> DeleteComment(int id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId == null)
+        {
+            return Unauthorized("You must be logged in to delete a comment.");
+        }
 
         try
         {
