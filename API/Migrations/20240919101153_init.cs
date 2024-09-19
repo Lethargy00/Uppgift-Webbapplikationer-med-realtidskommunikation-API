@@ -33,7 +33,7 @@ namespace API.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
-                    AccountName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    AccountName = table.Column<string>(type: "character varying(25)", maxLength: 25, nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -62,7 +62,7 @@ namespace API.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
+                    Name = table.Column<string>(type: "character varying(25)", maxLength: 25, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -275,7 +275,8 @@ namespace API.Migrations
                 {
                     { 1, "Träd" },
                     { 2, "Buskar" },
-                    { 3, "Blommor" }
+                    { 3, "Blommor" },
+                    { 4, "Gräs" }
                 });
 
             migrationBuilder.CreateIndex(
