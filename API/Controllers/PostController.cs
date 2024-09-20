@@ -127,10 +127,10 @@ public class PostController : ControllerBase
             var post = await _context
                 .Posts.Include(p => p.AppUser)
                 .Include(p => p.Comments)
-                .ThenInclude(c => c.AppUser) // Ensure to fetch comment user details
+                .ThenInclude(c => c.AppUser)
                 .Include(p => p.Likes)
                 .Include(p => p.Category)
-                .Where(p => p.Id == id) // Filter by post ID
+                .Where(p => p.Id == id)
                 .Select(p => new PostResponseDto
                 {
                     Id = p.Id,
@@ -138,6 +138,15 @@ public class PostController : ControllerBase
                     ImageUrl = p.ImageUrl,
                     AccountName = p.AppUser.AccountName,
                     AppUserId = p.AppUser.Id,
+                    Likes = p
+                        .Likes.Select(l => new LikeResponseDto
+                        {
+                            Id = l.Id,
+                            AppUserId = l.AppUserId,
+                            AccountName = l.AppUser.AccountName,
+                            CreatedDate = l.CreatedDate,
+                        })
+                        .ToList(),
                     Comments = p
                         .Comments.Select(c => new CommentResponseDto
                         {
@@ -161,7 +170,7 @@ public class PostController : ControllerBase
                     CreatedDate = p.CreatedDate,
                     UpdatedDate = p.UpdatedDate,
                 })
-                .FirstOrDefaultAsync(); // Return a single post, not a list
+                .FirstOrDefaultAsync();
 
             if (post == null)
             {
