@@ -68,6 +68,7 @@ public class PostController : ControllerBase
                             Id = c.Id,
                             CommentText = c.Text,
                             AccountName = c.AppUser.AccountName,
+                            AppUserId = c.AppUser.Id,
                             CreatedDate = c.CreatedDate,
                             UpdatedDate = c.UpdatedDate,
                             Likes = c
@@ -153,6 +154,7 @@ public class PostController : ControllerBase
                             Id = c.Id,
                             CommentText = c.Text,
                             AccountName = c.AppUser.AccountName,
+                            AppUserId = c.AppUser.Id,
                             CreatedDate = c.CreatedDate,
                             UpdatedDate = c.UpdatedDate,
                             Likes = c
@@ -257,6 +259,7 @@ public class PostController : ControllerBase
                             Id = c.Id,
                             CommentText = c.Text,
                             AccountName = c.AppUser.AccountName,
+                            AppUserId = c.AppUser.Id,
                             CreatedDate = c.CreatedDate,
                             UpdatedDate = c.UpdatedDate,
                             Likes = c
@@ -474,6 +477,7 @@ public class PostController : ControllerBase
                         Id = c.Id,
                         CommentText = c.Text,
                         AccountName = c.AppUser.AccountName,
+                        AppUserId = c.AppUser.Id,
                         CreatedDate = c.CreatedDate,
                         UpdatedDate = c.UpdatedDate,
                         Likes = c
@@ -612,6 +616,7 @@ public class PostController : ControllerBase
                         Id = c.Id,
                         CommentText = c.Text,
                         AccountName = c.AppUser.AccountName,
+                        AppUserId = c.AppUser.Id,
                         CreatedDate = c.CreatedDate,
                         UpdatedDate = c.UpdatedDate,
                         Likes = c
