@@ -43,7 +43,7 @@ namespace API.Data
                 .HasMany(p => p.Likes)
                 .WithOne(l => l.Post)
                 .HasForeignKey(l => l.PostId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder
                 .Entity<Comment>()
@@ -57,21 +57,21 @@ namespace API.Data
                 .HasMany(u => u.Posts)
                 .WithOne(p => p.AppUser)
                 .HasForeignKey(p => p.AppUserId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder
                 .Entity<AppUser>()
                 .HasMany(u => u.Comments)
                 .WithOne(c => c.AppUser)
                 .HasForeignKey(c => c.AppUserId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder
                 .Entity<AppUser>()
                 .HasMany(u => u.Likes)
                 .WithOne(l => l.AppUser)
                 .HasForeignKey(l => l.AppUserId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder
                 .Entity<Category>()

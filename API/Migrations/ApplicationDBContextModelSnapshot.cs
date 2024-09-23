@@ -380,7 +380,7 @@ namespace API.Migrations
                     b.HasOne("API.Models.AppUser", "AppUser")
                         .WithMany("Comments")
                         .HasForeignKey("AppUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("API.Models.Post", "Post")
@@ -399,7 +399,7 @@ namespace API.Migrations
                     b.HasOne("API.Models.AppUser", "AppUser")
                         .WithMany("Likes")
                         .HasForeignKey("AppUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("API.Models.Comment", "Comment")
@@ -410,7 +410,7 @@ namespace API.Migrations
                     b.HasOne("API.Models.Post", "Post")
                         .WithMany("Likes")
                         .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("AppUser");
 
@@ -424,7 +424,7 @@ namespace API.Migrations
                     b.HasOne("API.Models.AppUser", "AppUser")
                         .WithMany("Posts")
                         .HasForeignKey("AppUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("API.Models.Category", "Category")

@@ -1,8 +1,10 @@
+using System.Security.Claims;
 using System.Threading.Tasks;
 using API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers
 {
@@ -24,6 +26,59 @@ namespace API.Controllers
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            try
+            {
+                var users = await _userManager.Users.ToListAsync();
+                var userList = users
+                    .Select(user => new
+                    {
+                        user.Id,
+                        user.AccountName,
+                        IsAdmin = _userManager.IsInRoleAsync(user, "Admin").Result,
+                        user.Email,
+                    })
+                    .ToList();
+
+                return Ok(userList);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "An unexpected error occurred.");
+            }
+        }
+
+        [HttpGet("WhoAmI")]
+        public async Task<IActionResult> WhoAmI()
+        {
+            try
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user == null)
+                {
+                    return NotFound("User not found");
+                }
+
+                var isAdmin = User.IsInRole("Admin");
+
+                return Ok(
+                    new
+                    {
+                        user.Id,
+                        user.AccountName,
+                        isAdmin,
+                    }
+                );
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "An unexpected error occurred.");
+            }
         }
 
         [HttpPost("register")]
@@ -66,8 +121,8 @@ namespace API.Controllers
             }
         }
 
-        [HttpPost("add-admin-role/{email}")]
-        public async Task<IActionResult> AddAdminRole(string email)
+        [HttpPost("admin/{id}")]
+        public async Task<IActionResult> AddAdminRole(string id)
         {
             if (!User.IsInRole("Admin"))
             {
@@ -77,7 +132,7 @@ namespace API.Controllers
             }
             try
             {
-                var user = await _userManager.FindByEmailAsync(email);
+                var user = await _userManager.FindByIdAsync(id);
 
                 if (user == null)
                 {
@@ -112,8 +167,8 @@ namespace API.Controllers
             }
         }
 
-        [HttpDelete("remove-admin-role/{email}")]
-        public async Task<IActionResult> RemoveAdminRole(string email)
+        [HttpDelete("admin/{id}")]
+        public async Task<IActionResult> RemoveAdminRole(string id)
         {
             if (!User.IsInRole("Admin"))
             {
@@ -123,8 +178,16 @@ namespace API.Controllers
             }
             try
             {
-                var user = await _userManager.FindByEmailAsync(email);
+                var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (id == currentUserId)
+                {
+                    return StatusCode(
+                        403,
+                        new { Error = "You cannot perform this action on your own account." }
+                    );
+                }
 
+                var user = await _userManager.FindByIdAsync(id);
                 if (user == null)
                 {
                     return NotFound(new { Error = "User not found." });
@@ -158,32 +221,29 @@ namespace API.Controllers
             }
         }
 
-        [HttpGet("WhoAmI")]
-        public async Task<IActionResult> WhoAmI()
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteUser(string id)
         {
-            try
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
             {
-                var user = await _userManager.GetUserAsync(User);
-                if (user == null)
-                {
-                    return NotFound("User not found");
-                }
-
-                var isAdmin = User.IsInRole("Admin");
-
-                return Ok(
-                    new
-                    {
-                        user.Id,
-                        user.AccountName,
-                        isAdmin,
-                    }
-                );
+                return NotFound();
             }
-            catch (Exception)
+
+            var isUserAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+            if (isUserAdmin)
             {
-                return StatusCode(500, "An unexpected error occurred.");
+                return Forbid();
             }
+
+            var result = await _userManager.DeleteAsync(user);
+            if (result.Succeeded)
+            {
+                return NoContent();
+            }
+
+            return BadRequest(result.Errors);
         }
     }
 }
