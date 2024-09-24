@@ -30,6 +30,10 @@ jobs:
         run: |
           cd API
           dotnet publish -c Release -o ./publish
+      - name: Create migration
+        run: |
+          cd API
+          dotnet ef migrations add CreateAspNetUsersTable
       - name: Update database
         run: |
           cd API
