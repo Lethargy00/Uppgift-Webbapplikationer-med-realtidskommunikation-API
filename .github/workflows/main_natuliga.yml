@@ -23,19 +23,17 @@ jobs:
 
       - name: Build with dotnet
         run: |
-          cd /API
+          cd API
           dotnet build --configuration Release
-
       - name: dotnet publish
         run: |
-          cd /API
-          dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/API
-
+          cd API
+          dotnet publish -c Release -o ./publish
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ${{env.DOTNET_ROOT}}/API
+          path: ./publish
 
   deploy:
     runs-on: ubuntu-latest
@@ -65,4 +63,4 @@ jobs:
         with:
           app-name: 'Natuliga'
           slot-name: 'Production'
-          package: ${{env.DOTNET_ROOT}}/API
+          package: ./publish
