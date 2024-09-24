@@ -67,6 +67,7 @@ public class CommentController : ControllerBase
                 Id = newComment.Id,
                 CommentText = newComment.Text,
                 AccountName = newComment.AppUser.AccountName,
+                AppUserId = newComment.AppUserId,
                 CreatedDate = newComment.CreatedDate,
                 UpdatedDate = newComment.UpdatedDate,
                 Likes = new List<LikeResponseDto>(),
@@ -99,6 +100,7 @@ public class CommentController : ControllerBase
                     Id = c.Id,
                     CommentText = c.Text,
                     AccountName = c.AppUser.AccountName,
+                    AppUserId = c.AppUserId,
                     CreatedDate = c.CreatedDate,
                     UpdatedDate = c.UpdatedDate,
                     Likes = c
@@ -178,6 +180,7 @@ public class CommentController : ControllerBase
                 Id = comment.Id,
                 CommentText = comment.Text,
                 AccountName = comment.AppUser.AccountName,
+                AppUserId = comment.AppUserId,
                 CreatedDate = comment.CreatedDate,
                 UpdatedDate = comment.UpdatedDate,
                 Likes = comment
