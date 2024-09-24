@@ -26,6 +26,10 @@ jobs:
         run: |
           cd API
           dotnet publish -c Release -o ./publish
+      - name: Update database
+        run: |
+          cd API
+          dotnet ef database update
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
