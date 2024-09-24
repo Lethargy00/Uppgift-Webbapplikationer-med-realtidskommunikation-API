@@ -34,6 +34,7 @@ jobs:
         with:
           name: .net-app
           path: ./publish
+        working-directory: ./API
 
   deploy:
     runs-on: ubuntu-latest
@@ -49,18 +50,4 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: .net-app
-      
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_D888DBA7E89545A897991FFCEC519593 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_3856E15CA81249389C2BB74DA9913D00 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F5A201EC13AF45728D149AEA34683E79 }}
-
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: 'Natuliga'
-          slot-name: 'Production'
-          package: ./publish
+          path: ./publish
