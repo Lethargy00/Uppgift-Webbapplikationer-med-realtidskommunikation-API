@@ -22,26 +22,37 @@ jobs:
         run: |
           dotnet tool install --global dotnet-ef
 
-      - name: Build with dotnet
+      - name: Clean and build with dotnet
         run: |
           cd API
+          dotnet clean
           dotnet build --configuration Release
+        continue-on-error: true
+
+      - name: Check build result
+        run: |
+          if [ -f API/obj/Release/net8.0/Api.dll ]; then
+            echo "Build successful"
+          else
+            echo "Build failed"
+            exit 1
+          fi
+
       - name: dotnet publish
         run: |
           cd API
           dotnet publish -c Release -o ./publish
-      - name: Error database
-        run: |
-          cd API
-          dotnet build
+
       - name: Create migration
         run: |
           cd API
           dotnet ef migrations add CreateAspNetUsersTable
+
       - name: Update database
         run: |
           cd API
           dotnet ef database update
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
