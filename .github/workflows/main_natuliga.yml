@@ -18,6 +18,10 @@ jobs:
         with:
           dotnet-version: '8.x'
 
+      - name: Install Entity Framework Core tools
+        run: |
+          dotnet tool install --global dotnet-ef
+
       - name: Build with dotnet
         run: |
           cd API
