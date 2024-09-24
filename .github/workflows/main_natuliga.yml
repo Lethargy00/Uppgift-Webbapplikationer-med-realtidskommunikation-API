@@ -38,6 +38,10 @@ jobs:
         run: |
           cd API
           dotnet ef database update
+      - name: Error database
+        run: |
+          cd API
+          dotnet build
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
