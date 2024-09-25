@@ -28,6 +28,10 @@ jobs:
           cd API
           dotnet publish -c Release -o ./publish
 
+      - name: List publish directory contents
+        run: |
+          ls -la ./API/publish
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
@@ -67,10 +71,13 @@ jobs:
         run: |
           echo "CONNECTION_STRING=$(az webapp config connection-string show --name Natuliga --resource-group Natuliga_Group --query "ConnectionStrings__DefaultConnection" -o tsv)" >> $GITHUB_ENV
 
+      - name: Debug Connection String
+        run: echo "Connection String: $CONNECTION_STRING"
+
       - name: Run EF Database Update
         run: |
           cd ./publish
-          dotnet ef database update --context natuliga-database --connection "$CONNECTION_STRING"
+          dotnet ef database update --context natuliga-database --connection "$CONNECTION_STRING" --project ../API/API.csproj
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
