@@ -59,8 +59,11 @@ var app = builder.Build();
 
 
 app.UseSwagger();
-app.UseSwaggerUI();
-
+app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Dispatch API v1");
+        c.RoutePrefix = string.Empty;
+    });
 
 app.UseCors(builder =>
     builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().WithExposedHeaders("Metadata")
