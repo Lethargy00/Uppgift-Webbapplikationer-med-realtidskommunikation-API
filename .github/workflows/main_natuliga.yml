@@ -60,12 +60,17 @@ jobs:
       - name: Install dotnet-ef tool
         run: |
           dotnet tool install --global dotnet-ef
-          echo "::add-path::$(dotnet tool path --global)"
+          echo "${{ runner.tool_cache }}/dotnet/tools" >> $GITHUB_PATH
+
+      - name: Retrieve Connection String from Azure
+        id: get-connection-string
+        run: |
+          echo "CONNECTION_STRING=$(az webapp config connection-string show --name Natuliga --resource-group Natuliga_Group --query "ConnectionStrings__DefaultConnection" -o tsv)" >> $GITHUB_ENV
 
       - name: Run EF Database Update
         run: |
           cd ./publish
-          dotnet ef database update --context YourDbContextName --connection "${{ secrets.YOUR_CONNECTION_STRING_SECRET }}"
+          dotnet ef database update --context natuliga-database --connection "$CONNECTION_STRING"
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
