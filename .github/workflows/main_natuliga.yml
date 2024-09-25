@@ -22,10 +22,12 @@ jobs:
         run: |
           cd API
           dotnet build --configuration Release
+
       - name: dotnet publish
         run: |
           cd API
           dotnet publish -c Release -o ./publish
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
@@ -39,7 +41,7 @@ jobs:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write #This is required for requesting the JWT
+      id-token: write # This is required for requesting the JWT
 
     steps:
       - name: Download artifact from build job
@@ -54,6 +56,11 @@ jobs:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_D888DBA7E89545A897991FFCEC519593 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_3856E15CA81249389C2BB74DA9913D00 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F5A201EC13AF45728D149AEA34683E79 }}
+
+      - name: Run EF Database Update
+        run: |
+          cd ./publish
+          dotnet ef database update --context YourDbContextName --connection "YourConnectionString"
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
