@@ -57,10 +57,15 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_3856E15CA81249389C2BB74DA9913D00 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F5A201EC13AF45728D149AEA34683E79 }}
 
+      - name: Install dotnet-ef tool
+        run: |
+          dotnet tool install --global dotnet-ef
+          echo "::add-path::$(dotnet tool path --global)"
+
       - name: Run EF Database Update
         run: |
           cd ./publish
-          dotnet ef database update --context YourDbContextName --connection "YourConnectionString"
+          dotnet ef database update --context YourDbContextName --connection "${{ secrets.YOUR_CONNECTION_STRING_SECRET }}"
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
