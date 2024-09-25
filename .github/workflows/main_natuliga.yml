@@ -45,7 +45,7 @@ jobs:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write # This is required for requesting the JWT
+      id-token: write
 
     steps:
       - name: Download artifact from build job
@@ -54,6 +54,10 @@ jobs:
           name: .net-app
           path: ./publish
 
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -61,20 +65,21 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_3856E15CA81249389C2BB74DA9913D00 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F5A201EC13AF45728D149AEA34683E79 }}
 
-      - name: Install dotnet-ef tool
-        run: |
-          dotnet tool install --global dotnet-ef
-          echo "${{ runner.tool_cache }}/dotnet/tools" >> $GITHUB_PATH
-
       - name: Retrieve Connection String from Azure
         id: get-connection-string
         run: |
           echo "CONNECTION_STRING=$(az webapp config connection-string show --name Natuliga --resource-group Natuliga_Group --query "ConnectionStrings__DefaultConnection" -o tsv)" >> $GITHUB_ENV
 
+      - name: Print current directory
+        run: pwd
+
+      - name: List contents of current directory
+        run: ls -la
+
       - name: Run EF Database Update
         run: |
           cd API
-          dotnet ef database update --context natuliga-database --connection "$CONNECTION_STRING" --project ../API/API.csproj
+          dotnet ef database update --context natuliga-database --connection "$CONNECTION_STRING" --project API.csproj
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
@@ -83,3 +88,4 @@ jobs:
           app-name: 'Natuliga'
           slot-name: 'Production'
           package: ./publish
+
