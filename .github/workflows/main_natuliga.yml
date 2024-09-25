@@ -71,9 +71,6 @@ jobs:
         run: |
           echo "CONNECTION_STRING=$(az webapp config connection-string show --name Natuliga --resource-group Natuliga_Group --query "ConnectionStrings__DefaultConnection" -o tsv)" >> $GITHUB_ENV
 
-      - name: Debug Connection String
-        run: echo "Connection String: $CONNECTION_STRING"
-
       - name: Run EF Database Update
         run: |
           cd ./publish
