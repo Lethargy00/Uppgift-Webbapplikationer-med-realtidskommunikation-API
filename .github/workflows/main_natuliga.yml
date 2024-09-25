@@ -73,7 +73,7 @@ jobs:
 
       - name: Run EF Database Update
         run: |
-          cd ./publish
+          cd API
           dotnet ef database update --context natuliga-database --connection "$CONNECTION_STRING" --project ../API/API.csproj
 
       - name: Deploy to Azure Web App
